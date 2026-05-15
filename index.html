@@ -69,35 +69,38 @@
         }
 
         .schedule-grid {
-            display: grid;
-            gap: 20px;
-            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-        }
-
-        .match-card {
             background: white;
             border-radius: 12px;
             padding: 20px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
+            overflow-x: auto;
         }
 
-        .match-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
         }
 
-        .match-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #f0f0f0;
+        .schedule-table th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .schedule-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .schedule-table tr:hover {
+            background: #f9f9f9;
         }
 
         .match-number {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             color: #667eea;
         }
@@ -113,7 +116,6 @@
             border-radius: 20px;
             font-size: 12px;
             font-weight: bold;
-            margin-left: 10px;
         }
 
         .group-a {
@@ -126,35 +128,30 @@
             color: #f57c00;
         }
 
-        .teams {
-            margin: 15px 0;
-        }
-
         .team {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             color: #333;
-            margin: 8px 0;
         }
 
         .vs {
             text-align: center;
             color: #999;
             font-weight: bold;
-            margin: 5px 0;
+            padding: 0 10px;
         }
 
         .score-button {
-            width: 100%;
-            padding: 12px;
+            padding: 8px 16px;
             background: #4CAF50;
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
             transition: background 0.3s;
+            white-space: nowrap;
         }
 
         .score-button:hover {
@@ -568,34 +565,50 @@
             const container = document.getElementById('matchesContainer');
             container.innerHTML = '';
 
+            const table = document.createElement('table');
+            table.className = 'schedule-table';
+            
+            let html = `
+                <thead>
+                    <tr>
+                        <th>Match</th>
+                        <th>Date</th>
+                        <th>Group</th>
+                        <th>Team 1</th>
+                        <th>VS</th>
+                        <th>Team 2</th>
+                        <th>Score</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+            `;
+
             matches.forEach(match => {
-                const card = document.createElement('div');
-                card.className = 'match-card';
-                
                 const hasScore = scores[match.id];
-                const scoreDisplay = hasScore ? generateScoreDisplay(match.id) : '';
+                const scoreDisplay = hasScore ? generateScoreDisplayInline(match.id) : '-';
                 
-                card.innerHTML = `
-                    <div class="match-header">
-                        <div>
-                            <span class="match-number">Match ${match.id}</span>
-                            <span class="group-badge group-${match.group.toLowerCase()}">Group ${match.group}</span>
-                        </div>
-                        <div class="match-date">${match.day}, ${match.date}</div>
-                    </div>
-                    <div class="teams">
-                        <div class="team">${match.team1}</div>
-                        <div class="vs">VS</div>
-                        <div class="team">${match.team2}</div>
-                    </div>
-                    ${scoreDisplay}
-                    <button class="score-button ${hasScore ? 'scored' : ''}" onclick="openScoreModal(${match.id})">
-                        ${hasScore ? 'Edit Score' : 'Enter Score'}
-                    </button>
+                html += `
+                    <tr>
+                        <td><span class="match-number">#${match.id}</span></td>
+                        <td class="match-date">${match.day}, ${match.date}</td>
+                        <td><span class="group-badge group-${match.group.toLowerCase()}">Group ${match.group}</span></td>
+                        <td class="team">${match.team1}</td>
+                        <td class="vs">VS</td>
+                        <td class="team">${match.team2}</td>
+                        <td>${scoreDisplay}</td>
+                        <td>
+                            <button class="score-button ${hasScore ? 'scored' : ''}" onclick="openScoreModal(${match.id})">
+                                ${hasScore ? 'Edit' : 'Enter'}
+                            </button>
+                        </td>
+                    </tr>
                 `;
-                
-                container.appendChild(card);
             });
+
+            html += '</tbody>';
+            table.innerHTML = html;
+            container.appendChild(table);
         }
 
         function generateScoreDisplay(matchId) {
@@ -617,6 +630,23 @@
             
             html += `<br><strong>Points:</strong> ${score.winnerPoints} pts (Winner), ${score.loserPoints} pts (Loser)`;
             html += '</div>';
+            
+            return html;
+        }
+
+        function generateScoreDisplayInline(matchId) {
+            const score = scores[matchId];
+            if (!score) return '-';
+
+            let html = '';
+            for (let i = 0; i < score.sets.length; i++) {
+                const set = score.sets[i];
+                html += `${set.team1}-${set.team2}`;
+                if (set.tiebreaker) {
+                    html += ` (${set.tiebreaker.team1}-${set.tiebreaker.team2})`;
+                }
+                if (i < score.sets.length - 1) html += ', ';
+            }
             
             return html;
         }
